@@ -1,0 +1,6 @@
+{
+  "name": "ध्रु-VA Mobile Network Analyzer",
+  "description": "Real-time telecom cell analyzer, signal coverage, SIM diagnostic, and tower intelligence dashboard.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
