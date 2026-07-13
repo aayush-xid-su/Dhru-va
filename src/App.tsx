@@ -602,7 +602,7 @@ export default function App() {
       </header>
 
       {/* INNER TAB DISPLAYS */}
-      <main className={`flex-1 ${activeTab === 'map' ? 'overflow-hidden' : 'overflow-y-auto'} w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-4 relative flex flex-col`} id="app-main-content">
+      <main className="flex-1 overflow-y-auto w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-4 relative flex flex-col" id="app-main-content">
         {gpsMessage && (
           <div className={`mb-4 px-4 py-2.5 rounded-xl border flex items-center justify-between gap-3 text-xs font-mono select-none ${
             gpsMessage.type === 'success' 

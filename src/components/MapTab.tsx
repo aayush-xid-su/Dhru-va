@@ -428,74 +428,114 @@ export const MapTab: React.FC<MapTabProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full rounded-2xl overflow-hidden bg-slate-950 border border-white/5 relative" id="drona-map-container">
+    <div className="flex flex-col gap-4 w-full h-full" id="drona-map-container">
       
-      {/* QUICK FLOATING CONTROL SHEETS */}
-      <div className="absolute top-3 left-3 z-[1000] bg-slate-950/80 border border-white/10 p-2 sm:p-2.5 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100vw-110px)] sm:max-w-xs space-y-2">
-        <div className="flex justify-between items-center border-b border-white/5 pb-1.5 gap-2">
-          <h3 className="text-[10px] sm:text-xs font-bold text-white tracking-wider font-sans flex items-center gap-1 truncate">
-            <Route className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            DRIVETEST CONTROL
-          </h3>
-          <span className="text-[8px] sm:text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1 py-0.5 rounded leading-none shrink-0">
-            {simulationMode === 'drive' ? 'DRIVING' : 'WALK'}
-          </span>
-        </div>
-        
-        <div className="space-y-1.5 align-middle">
-          <div className="flex gap-1">
-            <button
-              onClick={() => setSimulationMode('drive')}
-              className={`flex-1 flex items-center justify-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border text-[10px] sm:text-xs font-medium font-sans cursor-pointer transition ${
-                simulationMode === 'drive'
-                  ? `bg-${themeColor}-500/20 text-${themeColor}-400 border-${themeColor}-500/40`
-                  : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Auto Drive
-            </button>
-            <button
-              onClick={() => setSimulationMode('real')}
-              className={`flex-1 flex items-center justify-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border text-[10px] sm:text-xs font-medium font-sans cursor-pointer transition ${
-                simulationMode === 'real'
-                  ? `bg-${themeColor}-500/20 text-${themeColor}-400 border-${themeColor}-500/40`
-                  : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              <Square className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Hand drag
-            </button>
-          </div>
-          <p className="text-[8.5px] sm:text-[9px] text-white/40 leading-tight font-sans">
-            * Drag the blue dot anywhere across the map to immediately test signal levels, RSRP loss, and trigger antenna crossovers.
-          </p>
+      {/* 1. MAP WORKSPACE CONTAINER */}
+      <div className="flex flex-col h-[380px] sm:h-[450px] md:h-[500px] rounded-2xl overflow-hidden bg-slate-950 border border-white/5 relative">
+        {/* CORE LEAFLET MAP ELEMENT CONTROLLER WRAPPER */}
+        <div className="w-full h-full" ref={mapContainerRef} />
+
+        {/* BOTTOM CENTER MAP PAN REFRESHER (floats on map) */}
+        <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">
+          <button
+            onClick={centerMapUser}
+            className="bg-slate-950/80 border border-white/10 p-2 rounded-xl text-white hover:bg-slate-900 shadow-2xl backdrop-blur-md cursor-pointer transition flex items-center justify-center"
+            title="Center map on User"
+          >
+            <Navigation className="w-4 h-4 text-cyan-400" />
+          </button>
         </div>
       </div>
 
-      {/* FLOATING MAP LAYERS / FILTER CONTROLS */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-1.5 font-sans">
-        {/* Toggle Button for Mobile Screens */}
-        <button
-          onClick={() => setLayersOpen(!layersOpen)}
-          className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950/90 border border-white/10 rounded-lg text-[9.5px] uppercase font-bold text-white shadow-2xl backdrop-blur-md cursor-pointer hover:bg-slate-900 border border-cyan-500/20"
-        >
-          <Eye className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Layers</span>
-          <span className="text-[8px] tracking-wide font-bold bg-cyan-500/15 text-cyan-400 px-1 py-0.5 rounded leading-none ml-1">
-            {layersOpen ? 'CLOSE' : 'OPEN'}
-          </span>
-        </button>
+      {/* 2. FOOTER BAR WITH METRICS AND GPS COORDS */}
+      <div className="bg-slate-900/90 border border-white/5 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2 truncate">
+        <div className="flex items-center gap-4 text-xs font-mono">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded bg-cyan-400" />
+            <span className="text-white/60">SIM1 active SIM ({sim1.operator})</span>
+            <span className="text-white font-bold">RSRP: {sim1.rsrp} dBm</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded bg-pink-400" />
+            <span className="text-white/60">SIM2 active SIM ({sim2.operator})</span>
+            <span className="text-white font-bold">RSRP: {sim2.rsrp} dBm</span>
+          </div>
+        </div>
 
-        {/* Configurations Panel overlay */}
-        <div className={`${layersOpen ? 'flex' : 'hidden md:flex'} flex-col gap-2 bg-slate-950/95 border border-white/10 p-2.5 rounded-xl shadow-2xl backdrop-blur-md w-52 text-left`}>
-          <div className="flex gap-1 border-b border-white/5 pb-1.5">
+        <div className="text-[10px] font-mono text-white/40 flex items-center gap-2">
+          <span>COORDS: {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</span>
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>DRIVE LOGGING ACTIVE</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. OPTION CONTROL PANELS SECTION (BELOW THE MAP) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-left">
+        
+        {/* PANEL A: DRIVETEST CONTROL */}
+        <div className="bg-slate-900 border border-white/10 p-4 rounded-xl shadow-xl flex flex-col justify-between gap-3">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center border-b border-white/5 pb-1.5 gap-2">
+              <h3 className="text-xs font-bold text-white tracking-wider font-sans flex items-center gap-1.5 truncate">
+                <Route className="w-4 h-4 text-cyan-400 shrink-0" />
+                DRIVETEST CONTROL
+              </h3>
+              <span className="text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded leading-none shrink-0 uppercase">
+                {simulationMode === 'drive' ? 'DRIVING' : 'WALK'}
+              </span>
+            </div>
+            
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setSimulationMode('drive')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium font-sans cursor-pointer transition ${
+                  simulationMode === 'drive'
+                    ? `bg-${themeColor}-500/20 text-${themeColor}-400 border-${themeColor}-500/40`
+                    : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
+                }`}
+              >
+                <Play className="w-3 h-3" /> Auto Drive
+              </button>
+              <button
+                onClick={() => setSimulationMode('real')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium font-sans cursor-pointer transition ${
+                  simulationMode === 'real'
+                    ? `bg-${themeColor}-500/20 text-${themeColor}-400 border-${themeColor}-500/40`
+                    : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
+                }`}
+              >
+                <Square className="w-3 h-3" /> Hand drag
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-white/40 leading-relaxed font-sans">
+            * Drag the blue dot anywhere across the map to immediately test signal levels, RSRP loss, and trigger antenna crossovers.
+          </p>
+        </div>
+
+        {/* PANEL B: MAP VIEW & LAYERS */}
+        <div className="bg-slate-900 border border-white/10 p-4 rounded-xl shadow-xl space-y-3">
+          <div className="flex justify-between items-center border-b border-white/5 pb-1.5 gap-2">
+            <h3 className="text-xs font-bold text-white tracking-wider font-sans flex items-center gap-1.5 truncate">
+              <Eye className="w-4 h-4 text-cyan-400 shrink-0" />
+              MAP VIEW & LAYERS
+            </h3>
+            <span className="text-[9px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded leading-none shrink-0 uppercase">
+              {mapType}
+            </span>
+          </div>
+
+          <div className="flex gap-1 bg-white/5 p-1 rounded-lg">
             {(['dark', 'streets', 'satellite'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setMapType(type)}
-                className={`flex-1 py-0.5 rounded text-[9px] uppercase font-mono font-semibold tracking-wide transition capitalize select-none cursor-pointer ${
+                className={`flex-1 py-1 rounded-md text-[10px] uppercase font-mono font-semibold tracking-wide transition capitalize select-none cursor-pointer ${
                   mapType === type 
                     ? 'bg-amber-400 text-slate-950 font-bold' 
-                    : 'text-white/60 hover:text-white bg-white/5'
+                    : 'text-white/60 hover:text-white bg-transparent hover:bg-white/5'
                 }`}
               >
                 {type}
@@ -503,141 +543,78 @@ export const MapTab: React.FC<MapTabProps> = ({
             ))}
           </div>
 
-          <div className="space-y-1 mt-1 font-sans">
-            <label className="flex items-center gap-1.5 text-[10px] text-white/70 select-none cursor-pointer">
+          <div className="space-y-1.5 pt-1 font-sans">
+            <label className="flex items-center gap-2 text-xs text-white/70 select-none cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={showTowers}
                 onChange={(e) => setShowTowers(e.target.checked)}
-                className="w-3 h-3 rounded bg-slate-950 border-white/10 uppercase focus:ring-0"
+                className="w-3.5 h-3.5 rounded bg-slate-950 border-white/10 focus:ring-0"
               />
               Show Antenna Nodes
             </label>
-            <label className="flex items-center gap-1.5 text-[10px] text-white/70 select-none cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-white/70 select-none cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={showCoverageCircle}
                 onChange={(e) => setShowCoverageCircle(e.target.checked)}
-                className="w-3 h-3 rounded bg-slate-950 border-white/10 uppercase focus:ring-0"
+                className="w-3.5 h-3.5 rounded bg-slate-950 border-white/10 focus:ring-0"
               />
               Show Coverage Grids
             </label>
-            <label className="flex items-center gap-1.5 text-[10px] text-white/70 select-none cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-white/70 select-none cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={showTowerLines}
                 onChange={(e) => setShowTowerLines(e.target.checked)}
-                className="w-3 h-3 rounded bg-slate-950 border-white/10 uppercase focus:ring-0"
+                className="w-3.5 h-3.5 rounded bg-slate-950 border-white/10 focus:ring-0"
               />
               Show Active Links
             </label>
           </div>
         </div>
-      </div>
 
-      {/* TRILATERATION GEOLOCATION LAB PANEL */}
-      {!labsOpen ? (
-        <div 
-          className="absolute bottom-16 left-3 z-[1000] bg-slate-950/90 border border-white/10 p-2 px-3 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 font-sans cursor-pointer flex items-center gap-2 hover:bg-slate-900"
-          onClick={() => setLabsOpen(true)}
-        >
-          <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest font-mono">Trilateration Lab</span>
-          <span className="text-[8px] tracking-wide font-bold bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded leading-none">
-            OPEN
-          </span>
-        </div>
-      ) : (
-        <div 
-          className="absolute bottom-16 left-3 z-[1000] bg-slate-950/95 border border-white/10 p-2 sm:p-3 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100vw-24px)] w-[290px] sm:w-[330px] transition-all duration-300 font-sans space-y-2 sm:space-y-2.5"
-          id="trilateration-lab-panel"
-        >
-          {/* Header */}
+        {/* PANEL C: TRILATERATION EXPERIMENT */}
+        <div className="bg-slate-900 border border-white/10 p-4 rounded-xl shadow-xl space-y-3">
           <div className="flex justify-between items-center border-b border-white/5 pb-1.5">
             <div className="flex items-center gap-1.5">
               <Target className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span className="text-xs font-bold text-white tracking-wider">TRILATERATION EXPERIMENT</span>
             </div>
-            <button 
-              onClick={() => setLabsOpen(false)}
-              className="text-[9px] font-mono tracking-wider text-emerald-400/80 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-1.5 py-0.5 rounded transition cursor-pointer select-none"
-            >
-              HIDE
-            </button>
           </div>
 
-          <p className="text-[10px] text-white/50 leading-relaxed font-sans">
-            Trilateration is the algorithm used to calculate your phone's coordinate based on its physical distance (or delay) from surrounding cell centers.
-          </p>
-
           {/* Steps */}
-          <div className="space-y-1.5">
-            {/* Step 1 */}
-            <button
-              onClick={() => setTrilaterationStep(1)}
-              className={`w-full flex items-center justify-between text-left p-1.5 rounded-lg border text-[10px] transition cursor-pointer font-sans ${
-                trilaterationStep === 1
-                  ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
-                  : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center font-mono font-bold text-[8px] ${trilaterationStep === 1 ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-white'}`}>
-                  1
-                </span>
-                <div>
-                  <div className="font-semibold text-white/90">Single Tower (Radius)</div>
-                  <div className="text-[8px] opacity-75 mt-0.5 max-w-[190px] leading-tight">Phone can be anywhere along the massive circle perimeter.</div>
-                </div>
-              </div>
-              {closestThree[0] && <span className="font-mono text-[8px] font-bold text-cyan-400 bg-cyan-400/10 px-1 rounded">{Math.round(closestThree[0].distance)}m</span>}
-            </button>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[1, 2, 3].map((step) => {
+              const active = trilaterationStep === step;
+              const stepColorPoint = step === 1 ? 'bg-cyan-500' : step === 2 ? 'bg-amber-500' : 'bg-emerald-500';
+              const stepColorText = step === 1 ? 'text-cyan-300' : step === 2 ? 'text-amber-300' : 'text-emerald-300';
+              const stepColorBorder = step === 1 ? 'border-cyan-500/40' : step === 2 ? 'border-amber-500/40' : 'border-emerald-500/40';
+              const stepColorBg = step === 1 ? 'bg-cyan-500/15' : step === 2 ? 'bg-amber-500/15' : 'bg-emerald-500/15';
 
-            {/* Step 2 */}
-            <button
-              onClick={() => setTrilaterationStep(2)}
-              className={`w-full flex items-center justify-between text-left p-1.5 rounded-lg border text-[10px] transition cursor-pointer font-sans ${
-                trilaterationStep === 2
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-                  : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center font-mono font-bold text-[8px] ${trilaterationStep === 2 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white'}`}>
-                  2
-                </span>
-                <div>
-                  <div className="font-semibold text-white/90">Two Towers (Intersections)</div>
-                  <div className="text-[8px] opacity-75 mt-0.5 max-w-[190px] leading-tight">Narrowed down to exactly 2 intersection points (A & B).</div>
-                </div>
-              </div>
-              {closestThree[1] && <span className="font-mono text-[8px] font-bold text-amber-400 bg-amber-400/10 px-1 rounded">{Math.round(closestThree[1].distance)}m</span>}
-            </button>
-
-            {/* Step 3 */}
-            <button
-              onClick={() => setTrilaterationStep(3)}
-              className={`w-full flex items-center justify-between text-left p-1.5 rounded-lg border text-[10px] transition cursor-pointer font-sans ${
-                trilaterationStep === 3
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
-                  : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center font-mono font-bold text-[8px] ${trilaterationStep === 3 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-white'}`}>
-                  3
-                </span>
-                <div>
-                  <div className="font-semibold text-white/90">Three Towers (Target Lock)</div>
-                  <div className="text-[8px] opacity-75 mt-0.5 max-w-[190px] leading-tight">All circles converge perfectly at your exact phone coordinate.</div>
-                </div>
-              </div>
-              {closestThree[2] && <span className="font-mono text-[8px] font-bold text-emerald-400 bg-emerald-400/10 px-1 rounded">{Math.round(closestThree[2].distance)}m</span>}
-            </button>
+              return (
+                <button
+                  key={step}
+                  onClick={() => setTrilaterationStep(step as 1 | 2 | 3)}
+                  className={`flex flex-col items-center justify-between text-center p-1 py-1.5 rounded-lg border text-[10px] transition cursor-pointer font-sans h-12 ${
+                    active
+                      ? `${stepColorBg} ${stepColorText} ${stepColorBorder}`
+                      : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center font-mono font-bold text-[8px] ${active ? `${stepColorPoint} text-slate-950` : 'bg-slate-800 text-white'}`}>
+                    {step}
+                  </span>
+                  <span className="text-[8.5px] font-medium leading-none block truncate w-full">
+                    {step === 1 ? 'Radius' : step === 2 ? '2 Towers' : '3 Lock'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Distance Logs */}
-          <div className="bg-slate-900 border border-white/5 p-1.5 rounded-lg space-y-1 font-mono text-[8.5px] text-white/70">
+          <div className="bg-slate-950 border border-white/5 p-2 rounded-lg space-y-1 font-mono text-[8.5px] text-white/70">
             <div className="text-white/40 border-b border-white/5 pb-1 flex justify-between font-bold">
               <span>ध्रु-VA CLOUD NODE</span>
               <span>CALCULATED DELAY METRICS</span>
@@ -656,44 +633,7 @@ export const MapTab: React.FC<MapTabProps> = ({
             })}
           </div>
         </div>
-      )}
 
-      {/* BOTTOM CENTER MAP PAN REFRESHER */}
-      <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">
-        <button
-          onClick={centerMapUser}
-          className="bg-slate-950/80 border border-white/10 p-2 rounded-xl text-white hover:bg-slate-900 shadow-2xl backdrop-blur-md cursor-pointer transition flex items-center justify-center"
-          title="Center map on User"
-        >
-          <Navigation className="w-4 h-4 text-cyan-400" />
-        </button>
-      </div>
-
-      {/* CORE LEAFLET MAP ELEMENT CONTROLLER WRAPPER */}
-      <div className="w-full flex-1" ref={mapContainerRef} style={{ minHeight: '380px' }} />
-
-      {/* FOOTER BAR TO EXPAND METRICS */}
-      <div className="bg-slate-900/90 border-t border-white/5 p-3 flex justify-between items-center flex-wrap gap-2 truncate">
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded bg-cyan-400" />
-            <span className="text-white/60">SIM1 active SIM ({sim1.operator})</span>
-            <span className="text-white">RSRP: {sim1.rsrp} dBm</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded bg-pink-400" />
-            <span className="text-white/60">SIM2 active SIM ({sim2.operator})</span>
-            <span className="text-white">RSRP: {sim2.rsrp} dBm</span>
-          </div>
-        </div>
-
-        <div className="text-[10px] font-mono text-white/40 flex items-center gap-2">
-          <span>COORDS: {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</span>
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>DRIVE LOGGING ACTIVE</span>
-          </div>
-        </div>
       </div>
 
     </div>
